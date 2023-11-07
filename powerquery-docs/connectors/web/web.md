@@ -183,6 +183,69 @@ For example, you could use the following steps to import a JSON file on the `htt
 
     As you can see, the Web connector returns the web contents from the URL you supplied, and then automatically wraps the web contents in the appropriate document type specified by the URL (`Json.Document` in this example).
 
+## Using Web Connector with Bear Token Authentication 
+
+Token Authentication is a HTTP authentication scheme where the authentication server grants a Bearer token to a web application to interact with the API. The scheme can be illustrated below 
+![image](https://github.com/MicrosoftDocs/powerquery-docs/assets/66091949/c5c53dc0-f275-4b46-ba13-8109338a21fb)
+Source: https://www.devopsschool.com/blog/what-is-bearer-token-and-how-it-works/
+
+
+We can use M Query to construct a system that would allow the user to retrieve the bearer token and interact with the API. 
+
+Firstly, an authentication call would have to be contructed as illustrated below, 
+
+```powerquery-m
+let 
+  Source = Json.Document(Web.Contents("Authentication Call Link Here"))
+  in
+  Source
+```
+Once you get the output, drill down to the request key and copy paste the M-Query steps from Advanced Editor. One example of this is shown below.
+![image](https://github.com/MicrosoftDocs/powerquery-docs/assets/66091949/7461450b-aa51-426c-ac10-f549b0618cb1)
+```powerquery-m
+/* This command with generate the request key */
+let
+  /* This command with generate the request key */
+  Source = Json.Document(Web.Contents("Authentication Call Link Here")),
+  Navigation = Source{0},
+  #"Drill down" = Navigation[request_key]
+  in
+  #"Drill down"
+```
+In addition to this, we will also need to build a datacall that would call the data from the API as shown below. For example,. 
+```powerquery-m
+/* This function will retrieve the data from the API */
+let
+ Source = Json.Document(Web.Contents("Datacall here", [RelativePath="Relative path here", Headers=[#"Request-Key"=”Request Key here” ]]))
+  in
+Source
+```
+Finally, we can wrap the above two steps into custom functions and call the request key into the datacall function as illustrated before 
+```powerquery-m
+/* We will take our authentication call function and call it GAT() */
+let
+  GAT = () =>
+let 
+  Source = Json.Document(Web.Contents("Authentication Call Link here")),
+  Navigation = Source{0},
+  #"Drill down" = Navigation[request_key]
+  in
+  #"Drill down",
+/* Next we will create the datacall function we made and use the output from GAT to populate the request key */
+    Datacall = () =>
+let
+ Source = Json.Document(Web.Contents("Datacall here", [RelativePath="Relative path here", Headers=[#"Request-Key"=#"GAT"() ]]))
+  in
+Source,
+/* Finally, we will take the output of Datacall as the result of the query as shown below */
+  Output = #"Datacall"()
+in
+  Output
+```
+
+
+
+
 ## See also
 
 * [Extract data from a Web page by example](web-by-example.md)
